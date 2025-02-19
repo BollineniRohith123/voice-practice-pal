@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { startCall, endCall } from '@/lib/callFunctions';
 import { demoConfig } from '@/app/demo-config';
 import ProductDisplay from '@/app/components/ProductDisplay';
@@ -11,6 +11,14 @@ export default function Home() {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [status, setStatus] = useState<string>('');
   const [isCallActive, setIsCallActive] = useState(false);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll transcripts
+  useEffect(() => {
+    if (transcriptRef.current) {
+      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+    }
+  }, [transcripts]);
 
   const handleStartCall = async () => {
     try {
@@ -46,7 +54,7 @@ export default function Home() {
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-xl font-semibold text-gray-900 text-center py-4">
-            Dr. Donut Drive-Thru
+            Interactive & Dynamic AI Website - DriveThrough Demo
           </h1>
         </div>
       </div>
@@ -94,23 +102,26 @@ export default function Home() {
 
               {/* Conversation */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Conversation</h3>
-                <div className="h-48 overflow-y-auto bg-gray-50 rounded-lg p-3">
+                <h3 className="text-sm font-medium text-gray-900 mb-2">Conversation</h3>
+                <div 
+                  ref={transcriptRef}
+                  className="h-48 overflow-y-auto bg-gray-50 rounded-lg p-3 space-y-2"
+                >
                   {transcripts.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center">
+                    <p className="text-gray-900 text-sm text-center">
                       Start your order by clicking the button above!
                     </p>
                   ) : (
                     transcripts.map((transcript, index) => (
                       <div 
                         key={index} 
-                        className={`mb-2 text-sm ${
+                        className={`text-sm ${
                           transcript.speaker === 'agent' 
-                            ? 'text-blue-600' 
-                            : 'text-gray-700'
+                            ? 'text-blue-700' 
+                            : 'text-gray-900'
                         }`}
                       >
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs font-medium text-gray-700">
                           {transcript.speaker === 'agent' ? 'Dr. Donut:' : 'You:'}
                         </span>
                         <span className="ml-2">{transcript.text}</span>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from 'next/image';
-import UVLogo from '@/public/UVHorizontal-White.svg';
+import UVLogo from '@/public/KnoLabs_logo.png';
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
@@ -22,12 +22,14 @@ export default function RootLayout({
       </head>
       <body className="bg-black text-white">
         <div className="flex mx-auto justify-between my-4 max-w-[1206px]">
-          <Image
-            src={UVLogo}
-            alt="Ultravox logo and wordmark"
-            width={200}
-          />
-          <a href="mailto:hello@fixie.ai?subject=Ultravox%20Demo" >
+          <div className="flex items-center">
+            <Image
+              src={UVLogo}
+              alt="Ultravox logo and wordmark"
+              width={200}
+            />
+          </div>
+          <a href="mailto:support@kno2gether.com?subject=Customized%20AI%20Solutions" >
             <button className="hover:bg-gray-700 px-6 py-2 border-2 rounded-[3px] w-40 mb-2">
               Get In Touch
             </button>
