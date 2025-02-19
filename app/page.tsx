@@ -1,51 +1,19 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation'; 
-import { startCall, endCall } from '@/lib/callFunctions'
-import { CallConfig, SelectedTool } from '@/lib/types'
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { startCall, endCall } from '@/lib/callFunctions';
 import demoConfig from '@/app/demo-config';
-import { Role, Transcript, UltravoxExperimentalMessageEvent, UltravoxSessionStatus } from 'ultravox-client';
-import BorderedImage from '@/components/BorderedImage';
-import UVLogo from '@/public/UVMark-White.svg';
+import { Role, Transcript } from 'ultravox-client';
 import CallStatus from '@/components/CallStatus';
-import DebugMessages from '@/components/DebugMessages';
 import MicToggleButton from '@/components/MicToggleButton';
 import { PhoneOffIcon } from 'lucide-react';
 import OrderDetails from '@/components/OrderDetails';
-
-type SearchParamsProps = {
-  showMuteSpeakerButton: boolean;
-  modelOverride: string | undefined;
-  showDebugMessages: boolean;
-  showUserTranscripts: boolean;
-};
-
-type SearchParamsHandlerProps = {
-  children: (props: SearchParamsProps) => React.ReactNode;
-};
-
-function SearchParamsHandler({ children }: SearchParamsHandlerProps) {
-  // Process query params to see if we want to change the behavior for showing speaker mute button or changing the model
-  const searchParams = useSearchParams();
-  const showMuteSpeakerButton = searchParams.get('showSpeakerMute') === 'true';
-  const showDebugMessages = searchParams.get('showDebugMessages') === 'true';
-  const showUserTranscripts = searchParams.get('showUserTranscripts') === 'true';
-  let modelOverride: string | undefined;
-  
-  if (searchParams.get('model')) {
-    modelOverride = "fixie-ai/" + searchParams.get('model');
-  }
-
-  return children({ showMuteSpeakerButton, modelOverride, showDebugMessages, showUserTranscripts });
-}
+import ProductDisplay from '@/components/ProductDisplay';
 
 export default function Home() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [agentStatus, setAgentStatus] = useState<string>('off');
   const [callTranscript, setCallTranscript] = useState<Transcript[] | null>([]);
-  const [callDebugMessages, setCallDebugMessages] = useState<UltravoxExperimentalMessageEvent[]>([]);
-  const [customerProfileKey, setCustomerProfileKey] = useState<string | null>(null);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -54,177 +22,98 @@ export default function Home() {
     }
   }, [callTranscript]);
 
-  const handleStatusChange = useCallback((status: UltravoxSessionStatus | string | undefined) => {
-    if(status) {
-      setAgentStatus(status);
-    } else {
-      setAgentStatus('off');
-    }
-    
-  }, []);
-
-  const handleTranscriptChange = useCallback((transcripts: Transcript[] | undefined) => {
-    if(transcripts) {
-      setCallTranscript([...transcripts]);
-    }
-  }, []);
-
-  const handleDebugMessage = useCallback((debugMessage: UltravoxExperimentalMessageEvent) => {
-    setCallDebugMessages(prevMessages => [...prevMessages, debugMessage]);
-  }, []);
-
-  const clearCustomerProfile = useCallback(() => {
-    // This will trigger a re-render of CustomerProfileForm with a new empty profile
-    setCustomerProfileKey(prev => prev ? `${prev}-cleared` : 'cleared');
-  }, []);
-
-  const handleStartCallButtonClick = async (modelOverride?: string, showDebugMessages?: boolean) => {
+  const handleStartCallButtonClick = useCallback(async () => {
     try {
-      handleStatusChange('Starting call...');
-      setCallTranscript(null);
-      setCallDebugMessages([]);
-      clearCustomerProfile();
-
-      // Generate a new key for the customer profile
-      const newKey = `call-${Date.now()}`;
-      setCustomerProfileKey(newKey);
-
-      // Setup our call config including the call key as a parameter restriction
-      let callConfig: CallConfig = {
-        systemPrompt: demoConfig.callConfig.systemPrompt,
-        model: modelOverride || demoConfig.callConfig.model,
-        languageHint: demoConfig.callConfig.languageHint,
-        voice: demoConfig.callConfig.voice,
-        temperature: demoConfig.callConfig.temperature,
-        maxDuration: demoConfig.callConfig.maxDuration,
-        timeExceededMessage: demoConfig.callConfig.timeExceededMessage
-      };
-
-      const paramOverride: { [key: string]: any } = {
-        "callId": newKey
-      }
-
-      let cpTool: SelectedTool | undefined = demoConfig?.callConfig?.selectedTools?.find(tool => tool.toolName === "createProfile");
-      
-      if (cpTool) {
-        cpTool.parameterOverrides = paramOverride;
-      }
-      callConfig.selectedTools = demoConfig.callConfig.selectedTools;
-
-      await startCall({
-        onStatusChange: handleStatusChange,
-        onTranscriptChange: handleTranscriptChange,
-        onDebugMessage: handleDebugMessage
-      }, callConfig, showDebugMessages);
-
+      await startCall(
+        {
+          onStatusChange: (status) => setAgentStatus(status),
+          onTranscriptChange: (transcripts) => setCallTranscript(transcripts),
+          onDebugMessage: (msg) => console.log('Debug:', msg)
+        },
+        demoConfig.callConfig,
+        true
+      );
       setIsCallActive(true);
-      handleStatusChange('Call started successfully');
     } catch (error) {
-      handleStatusChange(`Error starting call: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Failed to start call:', error);
+      setAgentStatus('error');
     }
-  };
+  }, []);
 
-  const handleEndCallButtonClick = async () => {
+  const handleEndCallButtonClick = useCallback(async () => {
     try {
-      handleStatusChange('Ending call...');
       await endCall();
       setIsCallActive(false);
-
-      clearCustomerProfile();
-      setCustomerProfileKey(null);
-      handleStatusChange('Call ended successfully');
+      setAgentStatus('off');
     } catch (error) {
-      handleStatusChange(`Error ending call: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('Failed to end call:', error);
     }
-  };
+  }, []);
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SearchParamsHandler>
-        {({ showMuteSpeakerButton, modelOverride, showDebugMessages, showUserTranscripts }: SearchParamsProps) => (
-          <div className="flex flex-col items-center justify-center">
-            {/* Main Area */}
-            <div className="max-w-[1206px] mx-auto w-full py-5 pl-5 pr-[10px] border border-[#2A2A2A] rounded-[3px]">
-              <div className="flex flex-col justify-center lg:flex-row ">
-                {/* Action Area */}
-                <div className="w-full lg:w-2/3">
-                  <h1 className="text-2xl font-bold w-full">{demoConfig.title}</h1>
-                  <div className="flex flex-col justify-between items-start h-full font-mono p-4 ">
-                    <div className="mt-20 self-center">
-                      <BorderedImage
-                        src={UVLogo}
-                        alt="todo"
-                        size="md"
-                      />
-                    </div>
-                    {isCallActive ? (
-                      <div className="w-full">
-                        <div className="mb-5 relative">
-                          <div 
-                            ref={transcriptContainerRef}
-                            className="h-[300px] p-2.5 overflow-y-auto relative"
-                          >
-                            {callTranscript && callTranscript.map((transcript, index) => (
-                              <div key={index}>
-                                {showUserTranscripts ? (
-                                  <>
-                                    <p><span className="text-gray-600">{transcript.speaker === 'agent' ? "Ultravox" : "User"}</span></p>
-                                    <p className="mb-4"><span>{transcript.text}</span></p>
-                                  </>
-                                ) : (
-                                  transcript.speaker === 'agent' && (
-                                    <>
-                                      <p><span className="text-gray-600">{transcript.speaker === 'agent' ? "Ultravox" : "User"}</span></p>
-                                      <p className="mb-4"><span>{transcript.text}</span></p>
-                                    </>
-                                  )
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-t from-transparent to-black pointer-events-none" />
-                        </div>
-                        <div className="flex justify-between space-x-4 p-4 w-full">
-                          <MicToggleButton role={Role.USER}/>
-                          { showMuteSpeakerButton && <MicToggleButton role={Role.AGENT}/> }
-                          <button
-                            type="button"
-                            className="flex-grow flex items-center justify-center h-10 bg-red-500"
-                            onClick={handleEndCallButtonClick}
-                            disabled={!isCallActive}
-                          >
-                            <PhoneOffIcon width={24} className="brightness-0 invert" />
-                            <span className="ml-2">End Call</span>
-                          </button>
-                        </div>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">{demoConfig.title}</h1>
+          <p className="text-lg text-gray-600">{demoConfig.overview}</p>
+        </div>
+
+        {/* Product Display */}
+        <div className="mb-8">
+          <ProductDisplay />
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Chat Area */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
+            {isCallActive ? (
+              <>
+                <div className="mb-6">
+                  <div 
+                    ref={transcriptContainerRef}
+                    className="h-[300px] overflow-y-auto bg-gray-50 rounded-lg p-4"
+                  >
+                    {callTranscript && callTranscript.map((transcript, index) => (
+                      <div key={index} className={`mb-4 ${transcript.speaker === 'agent' ? 'text-blue-600' : 'text-gray-700'}`}>
+                        <p className="text-sm text-gray-500">{transcript.speaker === 'agent' ? "Dr. Donut" : "You"}</p>
+                        <p className="mt-1">{transcript.text}</p>
                       </div>
-                    ) : (
-                      <div>
-                        <div className="h-[300px] text-gray-400 mb-6 mt-32 lg:mt-0">
-                          {demoConfig.overview}
-                        </div>
-                        <button
-                          type="button"
-                          className="hover:bg-gray-700 px-6 py-2 border-2 w-full mb-4"
-                          onClick={() => handleStartCallButtonClick(modelOverride, showDebugMessages)}
-                        >
-                          Start Call
-                        </button>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 </div>
-                {/* Call Status */}
-                <CallStatus status={agentStatus}>
-                  <OrderDetails />
-                </CallStatus>
+                <div className="flex gap-4">
+                  <MicToggleButton role={Role.USER} />
+                  <button
+                    onClick={handleEndCallButtonClick}
+                    className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    <span className="flex items-center justify-center">
+                      <PhoneOffIcon className="w-5 h-5 mr-2" />
+                      End Call
+                    </span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center">
+                <button
+                  onClick={handleStartCallButtonClick}
+                  className="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-colors text-lg"
+                >
+                  Start Order
+                </button>
               </div>
-            </div>
-            {/* Debug View */}
-            <DebugMessages debugMessages={callDebugMessages} />
+            )}
           </div>
-        )}
-      </SearchParamsHandler>
-    </Suspense>
-  )
+
+          {/* Order Details */}
+          <div className="bg-white rounded-lg shadow-lg">
+            <OrderDetails />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

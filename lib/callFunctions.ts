@@ -1,7 +1,7 @@
 'use client';
 import { UltravoxSession, UltravoxSessionStatus, Transcript, UltravoxExperimentalMessageEvent, Role } from 'ultravox-client';
 import { JoinUrlResponse, CallConfig } from '@/lib/types';
-import { updateOrderTool } from '@/lib/clientTools';
+import { updateOrderTool, highlightProductTool } from '@/lib/clientTools';
 
 let uvSession: UltravoxSession | null = null;
 const debugMessages: Set<string> = new Set(["debug"]);
@@ -61,50 +61,39 @@ async function createCall(callConfig: CallConfig, showDebugMessages?: boolean): 
 }
 
 export async function startCall(callbacks: CallCallbacks, callConfig: CallConfig, showDebugMessages?: boolean): Promise<void> {
-  const callData = await createCall(callConfig, showDebugMessages);
-  const joinUrl = callData.joinUrl;
+  try {
+    const callData = await createCall(callConfig, showDebugMessages);
+    const joinUrl = callData.joinUrl;
 
-  if (!joinUrl && !uvSession) {
-    console.error('Join URL is required');
-    return;
-  } else {
+    if (!joinUrl) {
+      console.error('Join URL is required');
+      return;
+    }
+
     console.log('Joining call:', joinUrl);
 
     // Start up our Ultravox Session
-    uvSession = new UltravoxSession({ experimentalMessages: debugMessages });
-    
-    // Register our tool for order details
-    uvSession.registerToolImplementation(
-      "updateOrder",
-      updateOrderTool
-    );
+    uvSession = new UltravoxSession({
+      onStatusChange: (status) => callbacks.onStatusChange(status),
+      onTranscriptChange: (transcripts) => callbacks.onTranscriptChange(transcripts),
+      onDebugMessage: (msg) => callbacks.onDebugMessage?.(msg)
+    });
+
+    // Register our tools
+    uvSession.registerToolImplementation("updateOrder", updateOrderTool);
+    uvSession.registerToolImplementation("highlightProduct", highlightProductTool);
 
     if(showDebugMessages) {
       console.log('uvSession created:', uvSession);
-      console.log('uvSession methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(uvSession)));
     }
 
-    if (uvSession) {
-      uvSession.addEventListener('status', (event: any) => {
-        callbacks.onStatusChange(uvSession?.status);
-      });
-  
-      uvSession.addEventListener('transcripts', (event: any) => {
-        callbacks.onTranscriptChange(uvSession?.transcripts);
-      });
-  
-      uvSession.addEventListener('experimental_message', (msg: any) => {
-        callbacks?.onDebugMessage?.(msg);
-      });
+    await uvSession.joinCall(joinUrl);
+    console.log('Call started!');
 
-      uvSession.joinCall(joinUrl);
-      console.log('Session status:', uvSession.status);
-    } else {
-      return;
-    }
+  } catch (error) {
+    console.error('Failed to start call:', error);
+    throw error;
   }
-
-  console.log('Call started!'); 
 }
 
 export async function endCall(): Promise<void> {

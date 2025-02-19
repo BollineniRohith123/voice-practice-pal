@@ -12,27 +12,27 @@ function getSystemPrompt() {
 
   ## Menu Items
     # DONUTS
-    PUMPKIN SPICE ICED DOUGHNUT $1.29
-    PUMPKIN SPICE CAKE DOUGHNUT $1.29
-    OLD FASHIONED DOUGHNUT $1.29
-    CHOCOLATE ICED DOUGHNUT $1.09
-    CHOCOLATE ICED DOUGHNUT WITH SPRINKLES $1.09
-    RASPBERRY FILLED DOUGHNUT $1.09
-    BLUEBERRY CAKE DOUGHNUT $1.09
-    STRAWBERRY ICED DOUGHNUT WITH SPRINKLES $1.09
-    LEMON FILLED DOUGHNUT $1.09
-    DOUGHNUT HOLES $3.99
+    Pumpkin Spice Iced Doughnut $1.29
+    Pumpkin Spice Cake Doughnut $1.29
+    Old Fashioned Doughnut $1.29
+    Chocolate Iced Doughnut $1.09
+    Chocolate Iced Doughnut with Sprinkles $1.09
+    Raspberry Filled Doughnut $1.09
+    Blueberry Cake Doughnut $1.09
+    Strawberry Iced Doughnut with Sprinkles $1.09
+    Lemon Filled Doughnut $1.09
+    Doughnut Holes $3.99
 
     # COFFEE & DRINKS
-    PUMPKIN SPICE COFFEE $2.59
-    PUMPKIN SPICE LATTE $4.59
-    REGULAR BREWED COFFEE $1.79
-    DECAF BREWED COFFEE $1.79
-    LATTE $3.49
-    CAPPUCINO $3.49
-    CARAMEL MACCHIATO $3.49
-    MOCHA LATTE $3.49
-    CARAMEL MOCHA LATTE $3.49
+    Pumpkin Spice Coffee $2.59
+    Pumpkin Spice Latte $4.59
+    Regular Brewed Coffee $1.79
+    Decaf Brewed Coffee $1.79
+    Latte $3.49
+    Cappucino $3.49
+    Caramel Macchiato $3.49
+    Mocha Latte $3.49
+    Caramel Mocha Latte $3.49
 
   ## Conversation Flow
   1. Greeting -> Order Taking -> Call "updateOrder" Tool -> Order Confirmation -> Payment Direction
@@ -42,8 +42,13 @@ function getSystemPrompt() {
     - User confirms an item
     - User requests item removal
     - User modifies quantity
+  - You must call the tool "highlightProduct" when:
+    - Discussing a specific menu item with the user
+    - Use action "show" when mentioning the product
+    - Use action "hide" when moving to a different product
   - Do not emit text during tool calls
-  - Validate menu items before calling updateOrder
+  - Validate menu items before calling any tools
+  - Use exact menu item names when calling tools
 
   ## Response Guidelines
   1. Voice-Optimized Format
@@ -127,6 +132,34 @@ const selectedTools: SelectedTool[] = [
       "client": {}
     }
   },
+  {
+    "temporaryTool": {
+      "modelToolName": "highlightProduct",
+      "description": "Highlight or unhighlight a product in the UI. Use this when discussing specific menu items.",
+      "dynamicParameters": [
+        {
+          "name": "productName",
+          "location": ParameterLocation.BODY,
+          "schema": {
+            "type": "string",
+            "description": "The name of the product to highlight"
+          },
+          "required": true
+        },
+        {
+          "name": "action",
+          "location": ParameterLocation.BODY,
+          "schema": {
+            "type": "string",
+            "enum": ["show", "hide"],
+            "description": "Whether to show or hide the highlight"
+          },
+          "required": true
+        }
+      ],
+      "client": {}
+    }
+  }
 ];
 
 export const demoConfig: DemoConfig = {
