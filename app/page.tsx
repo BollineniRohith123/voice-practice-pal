@@ -1,33 +1,23 @@
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { startCall, endCall } from '@/lib/callFunctions';
-import demoConfig from '@/app/demo-config';
-import { Role, Transcript } from 'ultravox-client';
-import CallStatus from '@/components/CallStatus';
-import MicToggleButton from '@/components/MicToggleButton';
-import { PhoneOffIcon } from 'lucide-react';
-import OrderDetails from '@/components/OrderDetails';
-import ProductDisplay from '@/components/ProductDisplay';
+import { demoConfig } from '@/app/demo-config';
+import ProductDisplay from '@/app/components/ProductDisplay';
+import OrderDetails from '@/app/components/OrderDetails';
+import { Transcript } from 'ultravox-client';
 
 export default function Home() {
+  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
+  const [status, setStatus] = useState<string>('');
   const [isCallActive, setIsCallActive] = useState(false);
-  const [agentStatus, setAgentStatus] = useState<string>('off');
-  const [callTranscript, setCallTranscript] = useState<Transcript[] | null>([]);
-  const transcriptContainerRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    if (transcriptContainerRef.current) {
-      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
-    }
-  }, [callTranscript]);
 
-  const handleStartCallButtonClick = useCallback(async () => {
+  const handleStartCall = async () => {
     try {
       await startCall(
         {
-          onStatusChange: (status) => setAgentStatus(status),
-          onTranscriptChange: (transcripts) => setCallTranscript(transcripts),
+          onTranscriptChange: (newTranscripts) => setTranscripts(newTranscripts || []),
+          onStatusChange: (newStatus) => setStatus(newStatus),
           onDebugMessage: (msg) => console.log('Debug:', msg)
         },
         demoConfig.callConfig,
@@ -36,84 +26,103 @@ export default function Home() {
       setIsCallActive(true);
     } catch (error) {
       console.error('Failed to start call:', error);
-      setAgentStatus('error');
     }
-  }, []);
+  };
 
-  const handleEndCallButtonClick = useCallback(async () => {
+  const handleEndCall = async () => {
     try {
       await endCall();
       setIsCallActive(false);
-      setAgentStatus('off');
+      setStatus('');
+      setTranscripts([]);
     } catch (error) {
       console.error('Failed to end call:', error);
     }
-  }, []);
+  };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">{demoConfig.title}</h1>
-          <p className="text-lg text-gray-600">{demoConfig.overview}</p>
+    <main className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4">
+          <h1 className="text-xl font-semibold text-gray-900 text-center py-4">
+            Dr. Donut Drive-Thru
+          </h1>
         </div>
+      </div>
 
-        {/* Product Display */}
-        <div className="mb-8">
-          <ProductDisplay />
-        </div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Chat Area */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
-            {isCallActive ? (
-              <>
-                <div className="mb-6">
-                  <div 
-                    ref={transcriptContainerRef}
-                    className="h-[300px] overflow-y-auto bg-gray-50 rounded-lg p-4"
-                  >
-                    {callTranscript && callTranscript.map((transcript, index) => (
-                      <div key={index} className={`mb-4 ${transcript.speaker === 'agent' ? 'text-blue-600' : 'text-gray-700'}`}>
-                        <p className="text-sm text-gray-500">{transcript.speaker === 'agent' ? "Dr. Donut" : "You"}</p>
-                        <p className="mt-1">{transcript.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <MicToggleButton role={Role.USER} />
-                  <button
-                    onClick={handleEndCallButtonClick}
-                    className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    <span className="flex items-center justify-center">
-                      <PhoneOffIcon className="w-5 h-5 mr-2" />
-                      End Call
-                    </span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="text-center">
-                <button
-                  onClick={handleStartCallButtonClick}
-                  className="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-colors text-lg"
-                >
-                  Start Order
-                </button>
-              </div>
-            )}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex gap-6">
+          {/* Left Section - Menu (70%) */}
+          <div className="w-[70%]">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <ProductDisplay />
+            </div>
           </div>
 
-          {/* Order Details */}
-          <div className="bg-white rounded-lg shadow-lg">
-            <OrderDetails />
+          {/* Right Section - Order & Drive-Thru (30%) */}
+          <div className="w-[30%] space-y-6">
+            {/* Order Details */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Your Order</h2>
+              <OrderDetails />
+            </div>
+
+            {/* Drive-Thru Controls */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Drive-Thru Speaker</h2>
+              
+              {/* Call Controls */}
+              <div className="mb-4">
+                {!isCallActive ? (
+                  <button
+                    onClick={handleStartCall}
+                    className="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    Start Order
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleEndCall}
+                    className="w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    End Order
+                  </button>
+                )}
+              </div>
+
+              {/* Conversation */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Conversation</h3>
+                <div className="h-48 overflow-y-auto bg-gray-50 rounded-lg p-3">
+                  {transcripts.length === 0 ? (
+                    <p className="text-gray-500 text-sm text-center">
+                      Start your order by clicking the button above!
+                    </p>
+                  ) : (
+                    transcripts.map((transcript, index) => (
+                      <div 
+                        key={index} 
+                        className={`mb-2 text-sm ${
+                          transcript.speaker === 'agent' 
+                            ? 'text-blue-600' 
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        <span className="text-xs text-gray-500">
+                          {transcript.speaker === 'agent' ? 'Dr. Donut:' : 'You:'}
+                        </span>
+                        <span className="ml-2">{transcript.text}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
