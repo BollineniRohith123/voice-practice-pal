@@ -78,6 +78,4 @@ pnpm dev
 ## Documentation
 For more information about Ultravox and its capabilities, visit: [Ultravox Documentation](https://docs.ultravox.ai)
 
-## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
