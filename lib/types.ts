@@ -115,20 +115,36 @@ interface HttpAuthRequirement {
 
 export interface CallConfig {
   systemPrompt: string;
-  model?: string;
-  languageHint?: string;
-  selectedTools?: SelectedTool[];
-  initialMessages?: Message[];
-  voice?: string;
   temperature?: number;
+  model?: string;
+  voice?: string;
+  languageHint?: string;
+  initialMessages?: Message[];
+  joinTimeout?: string;
   maxDuration?: string;
   timeExceededMessage?: string;
-  callKey?: string;
+  inactivityMessages?: string[];
+  selectedTools?: SelectedTool[];
+  medium?: string;
+  recordingEnabled?: boolean;
+  firstSpeaker?: string;
+  transcriptOptional?: boolean;
+  initialOutputMedium?: string;
+  vadSettings?: {
+    // Add VAD settings if needed
+  };
+  firstSpeakerSettings?: {
+    // Add first speaker settings if needed
+  };
+  experimentalSettings?: {
+    // Add experimental settings if needed
+  };
 }
 
 export interface DemoConfig {
   title: string;
   overview: string;
+  sessionId: string;
   callConfig: CallConfig;
 }
 
