@@ -1,5 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 
+// Mark route as dynamic
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // Get the call ID from the query parameters

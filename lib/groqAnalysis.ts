@@ -2,6 +2,11 @@
 
 import Groq from 'groq-sdk';
 
+type ChatCompletionMessageParam = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
 // Define interview message type to match the API response
 export interface InterviewMessage {
   role: string;
@@ -144,13 +149,16 @@ export async function analyzeInterview(data: InterviewData, language: string): P
     };
 
     // Create the message array with system prompt followed by the conversation
-    const messages = [systemPrompt, ...formattedMessages];
+    const messages: ChatCompletionMessageParam[] = [
+      systemPrompt as ChatCompletionMessageParam,
+      ...formattedMessages as ChatCompletionMessageParam[]
+    ];
 
     console.log('Sending messages to Groq:', JSON.stringify(messages));
     
     // Call the Groq API
     const result = await groq.chat.completions.create({
-      messages,
+      messages: messages,
       model: "llama-3.3-70b-versatile",
       temperature: 0.7,
       max_tokens: 2048, // Increase token limit for more detailed analysis
