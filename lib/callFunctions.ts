@@ -102,7 +102,7 @@ async function createCall(callConfig: CallConfig, showDebugMessages?: boolean): 
   }
 }
 
-export async function startCall(callbacks: CallCallbacks, callConfig: CallConfig, showDebugMessages?: boolean): Promise<void> {
+export async function startCall(callbacks: CallCallbacks, callConfig: CallConfig, showDebugMessages?: boolean): Promise<string> {
   try {
     if (uvSession) {
       console.warn('Call session already exists, ending previous session');
@@ -111,6 +111,7 @@ export async function startCall(callbacks: CallCallbacks, callConfig: CallConfig
 
     const callData = await createCall(callConfig, showDebugMessages);
     const joinUrl = callData.joinUrl;
+    const callId = callData.callId; // Assuming callId is part of the response
 
     if (!joinUrl) {
       throw new Error('Join URL is required but not provided');
@@ -168,10 +169,10 @@ export async function startCall(callbacks: CallCallbacks, callConfig: CallConfig
             throw toolError;
           }
         }
-      }
 
-      if(showDebugMessages) {
-        console.log('All tools registered successfully');
+        if(showDebugMessages) {
+          console.log('All tools registered successfully');
+        }
       }
     } catch (error) {
       console.error('Error registering tools:', error);
@@ -181,6 +182,7 @@ export async function startCall(callbacks: CallCallbacks, callConfig: CallConfig
 
     await uvSession.joinCall(joinUrl);
 
+    return callId; // Return the call ID
   } catch (error: unknown) {
     console.error('Error in startCall:', error);
     callbacks.onStatusChange(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);

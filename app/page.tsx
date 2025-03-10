@@ -4,10 +4,13 @@ import { startCall, endCall } from '@/lib/callFunctions';
 import { demoConfig, createDemoConfig } from './demo-config';
 import LanguageSelector from './components/LanguageSelector';
 import InterviewModule from './components/InterviewModule';
-import { Transcript, Role } from 'ultravox-client';
+import { Transcript, Role, Medium } from 'ultravox-client';
 import { InterviewFeedback } from './components/InterviewFeedback';
 import { PROGRAMMING_LANGUAGES } from '@/lib/constants';
 import MicToggleButton from './components/MicToggleButton';
+import { storeInterviewData, analyzeInterview, InterviewData, extractRatingsFromAnalysis } from '@/lib/groqAnalysis';
+import InterviewAnalysisDashboard from './components/InterviewAnalysisDashboard';
+import { useTranscriptPolling } from '@/lib/hooks/useTranscriptPolling';
 
 export default function Home() {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
@@ -15,6 +18,11 @@ export default function Home() {
   const [isCallActive, setIsCallActive] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [showFeedback, setShowFeedback] = useState(false);
+  const [callId, setCallId] = useState<string>('');
+  const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
+  const [interviewAnalysis, setInterviewAnalysis] = useState<string>('');
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [extractedName, setExtractedName] = useState<string>("Candidate");
   
   const transcriptRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +45,23 @@ export default function Home() {
       window.removeEventListener('interviewCompleted', handleInterviewCompleted as EventListener);
     };
   }, []);
+
+  // Add real-time transcript polling
+  const { messages: realtimeMessages, error: transcriptError, isLoading: isLoadingTranscripts } = 
+    useTranscriptPolling(callId, isCallActive);
+
+  // Update transcripts when realtime messages change
+  useEffect(() => {
+    if (realtimeMessages.length > 0) {
+      const formattedTranscripts: Transcript[] = realtimeMessages.map(msg => ({
+        speaker: msg.role === 'MESSAGE_ROLE_USER' ? Role.USER : Role.AGENT,
+        text: msg.text,
+        isFinal: true,
+        medium: msg.medium === 'MESSAGE_MEDIUM_TEXT' ? Medium.TEXT : Medium.VOICE
+      }));
+      setTranscripts(formattedTranscripts);
+    }
+  }, [realtimeMessages]);
 
   const handleStartCall = async () => {
     if (!selectedLanguage) {
@@ -62,7 +87,7 @@ export default function Home() {
         selectedTools: demoConfig.callConfig.selectedTools
       };
       
-      await startCall(
+      const callId = await startCall(
         {
           onTranscriptChange: (newTranscripts) => {
             if (newTranscripts) {
@@ -123,6 +148,9 @@ export default function Home() {
         process.env.NODE_ENV === 'development' // Only show debug messages in development
       );
       
+      console.log('Call ID:', callId);
+      setCallId(callId); // Save the call ID to state
+
       // Ensure call is marked as active after starting
       setIsCallActive(true);
     } catch (error) {
@@ -146,17 +174,72 @@ export default function Home() {
   const handleEndCall = async () => {
     try {
       await endCall();
+      // Immediately set call as inactive to stop polling
       setIsCallActive(false);
       setStatus('');
-      setShowFeedback(true);
+      
+      // Store final transcript data
+      if (callId) {
+        try {
+          setIsAnalyzing(true);
+          
+          // Final fetch of messages
+          const response = await fetch(`/api/ultravox/messages?callId=${callId}`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('Final call messages:', data);
+          
+          // Extract candidate name from messages
+          const nameMessage = data.results.find((msg: any) => 
+            msg.text.toLowerCase().includes('my name is') || 
+            msg.text.toLowerCase().includes('i am') || 
+            msg.text.toLowerCase().includes("i'm")
+          );
+          
+          if (nameMessage) {
+            const nameParts = nameMessage.text.match(/(?:my name is|i am|i'm)\s+(\w+)/i);
+            if (nameParts && nameParts[1]) {
+              setExtractedName(nameParts[1]);
+            }
+          }
+          
+          // Store interview data
+          setInterviewData(data);
+          storeInterviewData(data);
+          
+          // Analyze interview with Groq
+          if (selectedLanguage) {
+            try {
+              const analysis = await analyzeInterview(data, selectedLanguage);
+              setInterviewAnalysis(analysis);
+              console.log('Interview analysis:', analysis);
+            } catch (analysisError) {
+              console.error('Error analyzing interview:', analysisError);
+            }
+          }
+        } catch (apiError) {
+          console.error('Error fetching final call messages:', apiError);
+        } finally {
+          setIsAnalyzing(false);
+          setShowFeedback(true);
+        }
+      }
     } catch (error) {
       console.error('Failed to end interview:', error);
+      // Ensure call is marked as inactive even if there's an error
+      setIsCallActive(false);
+      setShowFeedback(true);
     }
   };
 
   const handleLanguageSelect = (language: string) => {
     setSelectedLanguage(language);
     setShowFeedback(false);
+    setInterviewAnalysis('');
     // Reset any previous call data if changing language
     if (isCallActive) {
       handleEndCall();
@@ -302,6 +385,27 @@ export default function Home() {
                 </div>
               )}
               
+              {/* Display Call ID when available */}
+              {callId && (
+                <div className="mb-4 p-3 rounded-lg bg-lavender/20 border border-lavender">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-medium-purple font-medium mb-1">Call ID:</span>
+                    <div className="flex items-center justify-between">
+                      <code className="text-xs text-deep-purple bg-white/50 px-2 py-1 rounded overflow-hidden overflow-ellipsis">{callId}</code>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(callId);
+                          alert('Call ID copied to clipboard!');
+                        }}
+                        className="text-xs bg-medium-purple text-white px-2 py-1 rounded hover:bg-deep-purple transition-colors"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Conversation */}
               <div>
                 <h3 className="text-md font-medium text-deep-purple mb-3 flex items-center">
@@ -309,12 +413,19 @@ export default function Home() {
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   </svg>
                   Interview Transcript
+                  {isLoadingTranscripts && (
+                    <div className="ml-2 w-4 h-4 border-2 border-medium-purple border-t-transparent rounded-full animate-spin"></div>
+                  )}
                 </h3>
                 <div 
                   ref={transcriptRef}
                   className="h-80 overflow-y-auto scrollbar-visible bg-neutral-bg/60 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-lavender shadow-inner"
                 >
-                  {transcripts.length === 0 ? (
+                  {transcriptError ? (
+                    <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
+                      Error loading transcript: {transcriptError}
+                    </div>
+                  ) : transcripts.length === 0 ? (
                     <div className="text-medium-purple text-center h-full flex flex-col items-center justify-center">
                       <div className="w-16 h-16 rounded-full bg-lavender/30 flex items-center justify-center mb-4">
                         {selectedLanguage ? (
@@ -377,10 +488,37 @@ export default function Home() {
                     Interview Complete!
                   </div>
                 </div>
-                <InterviewFeedback 
-                  language={selectedLanguage} 
-                  transcripts={transcripts} 
-                />
+                
+                {isAnalyzing ? (
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <div className="relative w-16 h-16">
+                      <div className="absolute inset-0 rounded-full bg-medium-purple/20 animate-ping"></div>
+                      <div className="absolute inset-2 rounded-full bg-medium-purple/40 animate-ping animation-delay-300"></div>
+                      <div className="absolute inset-4 rounded-full bg-medium-purple/60 animate-ping animation-delay-600"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 border-4 border-lavender rounded-full border-t-medium-purple animate-spin"></div>
+                      </div>
+                    </div>
+                    <p className="mt-6 text-medium-purple font-medium animate-pulse">
+                      Analyzing interview performance...
+                    </p>
+                    <div className="w-48 h-1.5 bg-lavender/50 rounded-full mt-4 overflow-hidden">
+                      <div className="h-full bg-medium-purple animate-progress"></div>
+                    </div>
+                  </div>
+                ) : interviewAnalysis ? (
+                  <InterviewAnalysisDashboard
+                    analysis={interviewAnalysis}
+                    ratings={extractRatingsFromAnalysis(interviewAnalysis)}
+                    candidateName={extractedName}
+                    language={selectedLanguage}
+                  />
+                ) : (
+                  <InterviewFeedback 
+                    language={selectedLanguage} 
+                    transcripts={transcripts} 
+                  />
+                )}
               </div>
             )}
           </div>
@@ -391,7 +529,7 @@ export default function Home() {
       <footer className="mt-12 py-4 border-t border-lavender/30 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-xs text-medium-purple">
           <p>© 2023 Tezhire. All rights reserved.</p>
-          <p>Powered by <span className="text-deep-purple font-medium">Ultravox AI</span></p>
+          <p>Powered by <span className="text-deep-purple font-medium">Rohith AI</span></p>
         </div>
       </footer>
     </main>

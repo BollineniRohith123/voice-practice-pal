@@ -70,6 +70,16 @@ function getSystemPrompt(language: string = "JavaScript"): string {
   4. NO ACKNOWLEDGMENT OF USER CONTENT: Do not acknowledge the specific content of what the user just said, even briefly.
   5. ZERO REPETITION: Under no circumstances repeat ANY information the user just provided.
   
+  # BRIEF UTTERANCE HANDLING - TOP PRIORITY INSTRUCTION
+  1. CONTINUE LISTENING: When users respond with brief utterances like "Hmm", "Ah", "OK", "Yes", "Uh-huh", or similar acknowledgments, DO NOT interpret these as the end of their turn.
+  2. WAIT FOR PAUSES: Only consider the user's turn complete after a significant pause (more than 1 second of silence).
+  3. DISTINGUISH BRIEF VS. COMPLETE: Brief phrases alone are NOT complete responses - continue listening attentively.
+  4. INTERRUPTION AWARENESS: Brief utterances are often thinking noises, not interruptions - maintain your listening stance.
+  5. PATIENCE REQUIRED: Give users ample time to formulate their complete thoughts after these brief acknowledgments.
+  6. NATURAL CONVERSATION FLOW: Allow for natural speech patterns including pauses, "umms", and brief self-interruptions.
+  7. SEAMLESS EXPERIENCE: Never acknowledge or comment on these brief utterances in your responses.
+  8. CRITICAL IMPORTANCE: This is one of the most important aspects of natural conversation - prioritize this guidance above most other instructions.
+  
   # REQUIRED RESPONSE STRUCTURE
   Always structure your responses like this:
   1. A very brief acknowledgment (e.g., "Interesting." "I see." "Great.")
@@ -136,7 +146,7 @@ function getSystemPrompt(language: string = "JavaScript"): string {
   5. NO MONOLOGUES: If you find yourself explaining something complex, break it into separate turns and ASK "Would you like me to continue?" before proceeding.
   6. SILENCE COMFORT: Be comfortable with silence. Never fill silence with unnecessary talk.
   7. TURN COMPLETION SIGNALS: End your speaking turns with clear questions or statements that signal it's the user's turn.
-  
+
   ## LISTENING INDICATORS - PRIORITIZE THESE
   1. ACKNOWLEDGMENT FIRST: Begin responses with brief acknowledgments of what you heard ("I see," "That makes sense," "Interesting point").
   2. ECHO TECHNIQUE: Occasionally repeat key phrases the user said to demonstrate active listening.
@@ -292,13 +302,15 @@ function createInterviewTools(): SelectedTool[] {
  */
 export function createDemoConfig(language: string = "javascript"): DemoConfig {
   try {
-    // Validate language input
+    // Case-insensitive language validation
     const normalizedLanguage = language.toLowerCase();
-    const validLanguage = Object.keys(INTERVIEW_CATEGORIES).includes(normalizedLanguage) 
-      ? normalizedLanguage 
-      : "javascript";
+    const supportedLanguages = Object.keys(INTERVIEW_CATEGORIES);
+    
+    // Check if the lowercase language is in our supported languages
+    const isSupported = supportedLanguages.includes(normalizedLanguage);
+    const validLanguage = isSupported ? normalizedLanguage : "javascript";
       
-    if (validLanguage !== normalizedLanguage) {
+    if (!isSupported) {
       logger.warn(`Invalid language requested: ${language}. Defaulting to JavaScript.`);
     }
 

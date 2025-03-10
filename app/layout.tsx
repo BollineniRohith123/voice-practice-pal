@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "Ultravox Demo",
-  description: "Demonstration of using the Ultravox API to create a call with an AI agent.",
+  title: "Tezhire Interview Bot",
+  description: "AI Agent from Tezhire to take interviews in Effective way.",
 };
 
 export default function RootLayout({
