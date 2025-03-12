@@ -1,81 +1,103 @@
-# TezHire Interview Bot
+# Viva Voce Practice
 
-> AI-powered technical interview platform using Ultravox for conducting realistic programming interviews and providing detailed candidate feedback.
+An interactive platform for medical students to practice their viva voce examination skills using AI.
 
-## Overview
+## Features
 
-TezHire Interview Bot is an innovative platform designed to help technical recruiters and hiring managers conduct preliminary technical interviews without human intervention. Using advanced AI technologies, the platform simulates realistic interview experiences across multiple programming languages, providing detailed feedback and candidate assessment.
+- Real-time voice interaction with AI examiner
+- Multiple medical specialties
+- Instant feedback and analysis
+- Progress tracking
+- Secure and private sessions
 
-## Key Features
+## Technologies Used
 
-- **Multi-language Technical Interviews**: Support for Python, JavaScript, Java, and C# programming interviews
-- **AI-Powered Interviewer**: Natural conversation flow with adaptive questioning based on candidate responses
-- **Real-time Candidate Assessment**: Evaluate technical skills, problem-solving abilities, and communication
-- **Comprehensive Feedback**: Detailed post-interview analytics and performance metrics
-- **Interactive Interview Experience**: Voice-based interactions with real-time transcription
-- **Performance Visualization**: Visual representation of candidate performance with animated scoring
-- **Customizable Question Categories**: Organized by programming language and technical domains
+- Next.js 14
+- React 18
+- Ultravox AI
+- TailwindCSS
+- TypeScript
+- Vercel Deployment
 
-## Technical Stack
-
-- **Next.js**: React framework for the user interface
-- **Ultravox AI**: Conversational AI engine for realistic interview simulations
-- **TypeScript**: Type-safe programming language
-- **Tailwind CSS**: Utility-first CSS framework for modern designs
-- **pnpm**: Fast, disk space efficient package manager
-
-## Setup Instructions
+## Getting Started
 
 ### Prerequisites
-- Node.js installed
-- pnpm installed ([installation instructions](https://pnpm.io/installation))
+
+- Node.js 18+ installed
 - Ultravox API key
+- Git
 
 ### Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/BollineniRohith123/Interviewbot.git
-   cd Interviewbot
-   ```
-
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-
-3. Set up environment variables:
-   - Create a file called `.env.local`
-   - Add your Ultravox API key:
-     ```
-     ULTRAVOX_API_KEY=<YOUR_KEY_HERE>
-     ```
-
-### Running the Application
-
-Start the development server:
 ```bash
-pnpm dev
+git clone <your-repo-url>
+cd viva-voce-practice
 ```
 
-## Interview Process
+2. Install dependencies:
+```bash
+npm install
+```
 
-1. **Language Selection**: Choose from Python, JavaScript, Java, or C#
-2. **Interview Initiation**: Begin the interview with an AI-powered interviewer
-3. **Technical Assessment**: Answer questions across multiple technical categories
-4. **Performance Analysis**: Receive detailed feedback and performance metrics
-5. **Review Results**: Analyze interview performance and areas for improvement
+3. Create .env.local file:
+```bash
+ULTRAVOX_API_KEY=your_api_key_here
+```
 
-## Query Parameters
+4. Run development server:
+```bash
+npm run dev
+```
 
-| What | Parameter | Notes |
-|--------|--------|---------|
-|**Debug Logging**|`showDebugMessages=true`| Turns on additional console logging|
-|**Speaker Mute Toggle**|`showSpeakerMute=true`| Shows the speaker mute button|
-|**Change Model**|`model=ultravox-70B`|Changes the model to what is specified. Note: the app will prepend `fixie-ai/` to the value|
-|**Enable User Transcripts**|`showUserTranscripts=true`|Displays user transcripts. Otherwise, only Ultravox/agent transcripts are shown|
+## Deployment
 
-## Documentation
-For more information about Ultravox and its capabilities, visit: [Ultravox Documentation](https://docs.ultravox.ai)
+### Deploying to Vercel
 
+1. Push code to GitHub:
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin YOUR_GITHUB_REPO_URL
+git push -u origin main
+```
 
+2. On Vercel Dashboard:
+- Create new project
+- Import GitHub repository
+- Add environment variables:
+  - ULTRAVOX_API_KEY: Your API key
+- Deploy
+
+### Environment Variables
+
+Required environment variables:
+- `ULTRAVOX_API_KEY`: Your Ultravox API key
+
+## Development
+
+### File Structure
+
+```
+viva-voce-practice/
+├── app/
+│   ├── api/           # API routes
+│   ├── components/    # React components
+│   └── page.tsx      # Main page
+├── lib/              # Utilities and types
+├── public/           # Static assets
+└── styles/          # Global styles
+```
+
+### Commands
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint
+
+## License
+
+MIT License - See LICENSE file for details

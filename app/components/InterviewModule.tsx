@@ -1,140 +1,128 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { MOCK_QUESTIONS, CODING_CHALLENGES } from '@/lib/constants';
 
-interface InterviewModuleProps {
-  language: string;
-  isActive: boolean;
+import { MOCK_QUESTIONS, CLINICAL_SCENARIOS, Question, ClinicalScenario } from '@/lib/constants';
+import { useState } from 'react';
+
+interface Props {
+  topic: string;
+  onClose: () => void;
 }
 
-const InterviewModule: React.FC<InterviewModuleProps> = ({ language, isActive }) => {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'challenges'>('overview');
+export default function InterviewModule({ topic, onClose }: Props) {
+  const [selectedType, setSelectedType] = useState<'questions' | 'scenarios'>('questions');
   
-  // Reset tab when language changes
-  useEffect(() => {
-    setSelectedTab('overview');
-  }, [language]);
-  
-  const questions = MOCK_QUESTIONS[language as keyof typeof MOCK_QUESTIONS] || [];
-  const challenges = CODING_CHALLENGES[language as keyof typeof CODING_CHALLENGES] || [];
-  
-  const renderLanguageIcon = () => {
-    switch(language) {
-      case 'python': return '🐍';
-      case 'java': return '☕';
-      case 'javascript': return '📜';
-      case 'csharp': return '#️⃣';
-      default: return '💻';
-    }
-  };
-  
-  const getLanguageDisplay = () => {
-    switch(language) {
-      case 'python': return 'Python';
-      case 'java': return 'Java';
-      case 'javascript': return 'JavaScript';
-      case 'csharp': return 'C#';
-      default: return language;
-    }
-  };
+  // Filter questions and scenarios by topic
+  const filteredQuestions = MOCK_QUESTIONS.filter(q => q.topic === topic);
+  const filteredScenarios = CLINICAL_SCENARIOS.filter(s => s.topic === topic);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-        <span className="text-3xl">{renderLanguageIcon()}</span>
-        <div>
-          <h2 className="text-xl font-medium text-gray-900">
-            {getLanguageDisplay()} Interview
-          </h2>
-          <p className="text-sm text-gray-500">
-            {isActive 
-              ? "Interview in progress - speak clearly and take your time to answer questions"
-              : 'Ready to start - click the "Start Interview" button to begin'}
-          </p>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold">Practice Module</h2>
+            <div className="flex rounded-lg border overflow-hidden">
+              <button
+                onClick={() => setSelectedType('questions')}
+                className={`px-4 py-2 text-sm ${
+                  selectedType === 'questions'
+                    ? 'bg-deep-purple text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Questions
+              </button>
+              <button
+                onClick={() => setSelectedType('scenarios')}
+                className={`px-4 py-2 text-sm ${
+                  selectedType === 'scenarios'
+                    ? 'bg-deep-purple text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Scenarios
+              </button>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-      </div>
-      
-      {/* Tab navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-8 -mb-px" aria-label="Tabs">
-          <button
-            onClick={() => setSelectedTab('overview')}
-            className={`
-              py-2 px-1 border-b-2 font-medium text-sm
-              ${selectedTab === 'overview'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-            `}
-          >
-            Language Overview
-          </button>
-          <button
-            onClick={() => setSelectedTab('challenges')}
-            className={`
-              py-2 px-1 border-b-2 font-medium text-sm
-              ${selectedTab === 'challenges'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-            `}
-          >
-            Coding Challenges
-          </button>
-        </nav>
-      </div>
-      
-      {/* Tab content */}
-      <div className="mt-4">
-        {selectedTab === 'overview' ? (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Common Interview Questions</h3>
-              <ul className="space-y-3 list-disc pl-5">
-                {questions.map((question, index) => (
-                  <li key={index} className="text-gray-700">{question}</li>
-                ))}
-              </ul>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h3 className="text-md font-medium text-gray-900 mb-2">Interview Tips</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li>Explain your thought process clearly as you work through problems</li>
-                <li>Ask clarifying questions if you're unsure about requirements</li>
-                <li>Discuss trade-offs in your solutions</li>
-                <li>Be honest if you don't know something, and explain how you would find the answer</li>
-              </ul>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Practice Coding Challenges</h3>
-            
-            <div className="space-y-4">
-              {challenges.map((challenge, index) => (
-                <div 
-                  key={index} 
-                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
-                >
-                  <div className="flex justify-between items-start">
-                    <h4 className="text-md font-medium text-gray-900">{challenge.title}</h4>
-                    <span className={`
-                      text-xs px-2 py-1 rounded-full
-                      ${challenge.difficulty === 'beginner' ? 'bg-green-100 text-green-800' : ''}
-                      ${challenge.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' : ''}
-                      ${challenge.difficulty === 'advanced' ? 'bg-red-100 text-red-800' : ''}
-                    `}>
-                      {challenge.difficulty}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-700 mt-2">{challenge.description}</p>
+        
+        <div className="p-6 flex-1 overflow-y-auto">
+          {selectedType === 'questions' ? (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">Practice Questions</h3>
+              {filteredQuestions.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredQuestions.map((question: Question, index: number) => (
+                    <div 
+                      key={question.id}
+                      className="p-4 rounded-lg border hover:border-deep-purple cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-500">Question {index + 1}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          question.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                          question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {question.difficulty}
+                        </span>
+                      </div>
+                      <p className="text-gray-800">{question.text}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="text-gray-500">No practice questions available for this topic.</p>
+              )}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">Clinical Scenarios</h3>
+              {filteredScenarios.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredScenarios.map((scenario: ClinicalScenario, index: number) => (
+                    <div 
+                      key={scenario.id}
+                      className="p-4 rounded-lg border hover:border-deep-purple cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-deep-purple">{scenario.title}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          scenario.complexity === 'low' ? 'bg-green-100 text-green-800' :
+                          scenario.complexity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {scenario.complexity} complexity
+                        </span>
+                      </div>
+                      <p className="text-gray-700">{scenario.description}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No clinical scenarios available for this topic.</p>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <div className="p-6 border-t flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
-};
-
-export default InterviewModule;
+}

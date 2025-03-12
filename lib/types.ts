@@ -131,13 +131,22 @@ export interface CallConfig {
   transcriptOptional?: boolean;
   initialOutputMedium?: string;
   vadSettings?: {
-    // Add VAD settings if needed
+    minSilenceDuration?: number;
+    maxSilenceDuration?: number;
+    silenceThreshold?: number;
   };
   firstSpeakerSettings?: {
-    // Add first speaker settings if needed
+    allowInterruptions?: boolean;
+    waitForUserResponse?: boolean;
   };
   experimentalSettings?: {
-    // Add experimental settings if needed
+    allowedResponseDuration?: string;
+    maxResponseDuration?: string;
+  };
+  interactionConfig?: {
+    allowInterruptions?: boolean;
+    minSilenceThreshold?: number;
+    maxSilenceThreshold?: number;
   };
 }
 

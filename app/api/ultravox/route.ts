@@ -32,28 +32,34 @@ export async function POST(request: NextRequest) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
       },
     });
   }
 
   try {
+    // Get the client-provided API key from headers if available
+    const clientApiKey = request.headers.get('X-API-Key');
+    
     // Debug log environment variables
     console.log('Environment check:', {
       nodeEnv: process.env.NODE_ENV,
       hasApiKey: !!process.env.ULTRAVOX_API_KEY,
+      hasClientApiKey: !!clientApiKey,
       apiKeyLength: process.env.ULTRAVOX_API_KEY?.length
     });
 
-    const apiKey = process.env.ULTRAVOX_API_KEY?.trim();
+    // Use client API key as fallback if environment variable is not set
+    let apiKey = process.env.ULTRAVOX_API_KEY?.trim() || clientApiKey;
+    
     if (!apiKey) {
-      console.error('ULTRAVOX_API_KEY is not set in environment variables');
+      console.error('No API key available - neither environment variable nor client header');
       return NextResponse.json(
         { 
           error: 'Configuration error', 
-          details: 'API key is not configured. Please set the ULTRAVOX_API_KEY environment variable.' 
+          details: 'API key is not configured. Please provide an API key.' 
         },
-        { status: 500 }
+        { status: 401 }
       );
     }
 
@@ -113,7 +119,6 @@ export async function POST(request: NextRequest) {
       if (body.maxDuration && !body.maxDuration.endsWith('s')) {
         body.maxDuration = `${body.maxDuration}s`;
       }
-
     } catch (parseError) {
       return NextResponse.json(
         { error: 'Invalid request', details: 'Invalid request body format' },

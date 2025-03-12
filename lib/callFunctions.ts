@@ -62,10 +62,14 @@ async function createCall(callConfig: CallConfig, showDebugMessages?: boolean): 
       ...(callConfig.initialOutputMedium && { initialOutputMedium: callConfig.initialOutputMedium })
     };
 
+    // Get the API key from localStorage
+    const apiKey = localStorage.getItem('ultravox_api_key');
+
     const response = await fetch('/api/ultravox', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': apiKey || '',
       },
       body: JSON.stringify(requestBody),
     });
